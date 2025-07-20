@@ -1,0 +1,31 @@
+{
+  "name": "cronx",
+  "version": "1.0.0",
+  "description": "HTTP Automation Platform with CRON Scheduling",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel --filter \"./apps/*\" dev",
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter api dev",
+    "build": "pnpm --filter \"./apps/*\" build",
+    "build:web": "pnpm --filter web build",
+    "build:api": "pnpm --filter api build",
+    "test": "pnpm --filter \"./apps/*\" test",
+    "test:web": "pnpm --filter web test",
+    "test:api": "pnpm --filter api test",
+    "lint": "pnpm --filter \"./apps/*\" lint",
+    "format": "prettier --write \"**/*.{js,ts,tsx,json,md}\"",
+    "db:generate": "pnpm --filter database db:generate",
+    "db:migrate": "pnpm --filter database db:migrate",
+    "db:studio": "pnpm --filter database db:studio",
+    "db:seed": "pnpm --filter database db:seed",
+    "db:reset": "pnpm --filter database db:reset"
+  },
+  "keywords": ["cron", "http", "automation", "scheduling", "api"],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.7.0",
+  "devDependencies": {
+    "prettier": "^3.0.0"
+  }
+}
