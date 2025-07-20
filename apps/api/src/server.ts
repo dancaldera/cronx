@@ -3,6 +3,33 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import winston from 'winston';
+import { checkConnection } from '@cronx/database';
+
+// Configure Winston logger
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
+  defaultMeta: { service: 'cronx-api' },
+  transports: [
+    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'logs/combined.log' }),
+  ],
+});
+
+// Add console transport for development
+if (process.env.NODE_ENV !== 'production') {
+  logger.add(new winston.transports.Console({
+    format: winston.format.combine(
+      winston.format.colorize(),
+      winston.format.simple()
+    )
+  }));
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -26,24 +53,47 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    version: process.env.npm_package_version || '1.0.0'
-  });
+app.get('/api/health', async (req, res) => {
+  try {
+    const dbConnected = await checkConnection();
+    res.json({ 
+      status: 'ok', 
+      timestamp: new Date().toISOString(),
+      version: process.env.npm_package_version || '1.0.0',
+      database: dbConnected ? 'connected' : 'disconnected'
+    });
+  } catch (error) {
+    logger.error('Health check failed:', error);
+    res.status(503).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      database: 'error'
+    });
+  }
 });
 
-// TODO: Add route handlers
-// app.use('/api/auth', authRoutes);
+// Import routes
+import authRoutes from './routes/auth';
+
+// Route handlers
+app.use('/api/auth', authRoutes);
+// TODO: Add remaining route handlers
 // app.use('/api/crons', cronRoutes);
 // app.use('/api/http-templates', templateRoutes);
 
 // Global error handler
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
+  logger.error('Unhandled error:', {
+    error: err.message,
+    stack: err.stack,
+    url: req.url,
+    method: req.method,
+    ip: req.ip
+  });
+  
   res.status(500).json({ 
     error: 'Something went wrong!',
+    timestamp: new Date().toISOString(),
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
 });
@@ -53,7 +103,19 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 API Server running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+app.listen(PORT, async () => {
+  logger.info(`🚀 API Server running on port ${PORT}`);
+  logger.info(`📊 Health check: http://localhost:${PORT}/api/health`);
+  
+  // Test database connection on startup
+  try {
+    const dbConnected = await checkConnection();
+    if (dbConnected) {
+      logger.info('✅ Database connection established');
+    } else {
+      logger.error('❌ Database connection failed');
+    }
+  } catch (error) {
+    logger.error('❌ Database connection error:', error);
+  }
 });
