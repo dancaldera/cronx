@@ -1,4 +1,4 @@
-import { Redis } from 'redis';
+import { createClient, RedisClientType } from 'redis';
 
 // Redis configuration
 const redisConfig = {
@@ -9,16 +9,13 @@ const redisConfig = {
 };
 
 // Create Redis client
-export const redis = new Redis({
+export const redis: RedisClientType = createClient({
   socket: {
     host: redisConfig.host,
     port: redisConfig.port,
   },
   password: redisConfig.password,
   database: redisConfig.db,
-  retryDelayOnFailover: 100,
-  enableOfflineQueue: false,
-  maxRetriesPerRequest: 3,
 });
 
 // Redis connection event handlers
@@ -26,7 +23,7 @@ redis.on('connect', () => {
   console.log('Redis client connected');
 });
 
-redis.on('error', (err) => {
+redis.on('error', (err: Error) => {
   console.error('Redis client error:', err);
 });
 
@@ -52,7 +49,7 @@ export const cache = {
 
   async set(key: string, value: any, ttl: number = 3600): Promise<boolean> {
     try {
-      await redis.setex(key, ttl, JSON.stringify(value));
+      await redis.setEx(key, ttl, JSON.stringify(value));
       return true;
     } catch (error) {
       console.error('Cache set error:', error);
