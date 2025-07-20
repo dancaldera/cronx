@@ -1,0 +1,76 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: cronx-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cronx_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - cronx-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: cronx-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass redis123
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - cronx-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  adminer:
+    image: adminer:latest
+    container_name: cronx-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    networks:
+      - cronx-network
+    depends_on:
+      - postgres
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: cronx-redis-commander
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    networks:
+      - cronx-network
+    depends_on:
+      - redis
+    environment:
+      REDIS_HOSTS: local:redis:6379:0:redis123
+
+volumes:
+  postgres_data:
+    name: cronx_postgres_data
+  redis_data:
+    name: cronx_redis_data
+
+networks:
+  cronx-network:
+    name: cronx-network
+    driver: bridge
+

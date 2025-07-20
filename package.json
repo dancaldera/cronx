@@ -7,6 +7,7 @@
     "dev": "pnpm --parallel --filter \"./apps/*\" dev",
     "dev:web": "pnpm --filter web dev",
     "dev:api": "pnpm --filter api dev",
+    "dev:watch": "pnpm --parallel dev:web dev:api",
     "build": "pnpm --filter \"./apps/*\" build",
     "build:web": "pnpm --filter web build",
     "build:api": "pnpm --filter api build",
@@ -19,9 +20,21 @@
     "db:migrate": "pnpm --filter database db:migrate",
     "db:studio": "pnpm --filter database db:studio",
     "db:seed": "pnpm --filter database db:seed",
-    "db:reset": "pnpm --filter database db:reset"
+    "db:reset": "pnpm --filter database db:reset",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "docker:clean": "docker compose down -v --remove-orphans",
+    "setup": "pnpm install && pnpm docker:up && sleep 5 && pnpm db:migrate && pnpm db:seed",
+    "setup:clean": "pnpm docker:clean && pnpm docker:up && sleep 10 && pnpm db:migrate && pnpm db:seed"
   },
-  "keywords": ["cron", "http", "automation", "scheduling", "api"],
+  "keywords": [
+    "cron",
+    "http",
+    "automation",
+    "scheduling",
+    "api"
+  ],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.7.0",

@@ -35,12 +35,12 @@
 - [x] Setup root `package.json` with workspace scripts
 
 #### Development Environment
-- [ ] Setup Docker Compose for local development
-- [ ] Configure PostgreSQL container
-- [ ] Configure Redis container
-- [ ] Create `.env` templates for both apps
-- [ ] Setup hot reloading for both apps
-- [ ] Document development setup in README
+- [x] Setup Docker Compose for local development
+- [x] Configure PostgreSQL container
+- [x] Configure Redis container
+- [x] Create `.env` templates for both apps
+- [x] Setup hot reloading for both apps
+- [x] Document development setup in README
 
 ---
 
