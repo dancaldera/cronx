@@ -57,6 +57,17 @@ pnpm dev               # Start both web and API servers
 - **Database Admin**: http://localhost:8080 (Adminer)
 - **Redis Admin**: http://localhost:8081 (Redis Commander)
 
+#### Database Connection Details
+- **Host**: localhost:5433
+- **Username**: postgres
+- **Password**: postgres
+- **Database**: cronx_dev
+
+#### Redis Connection Details
+- **Host**: localhost:6379
+- **Password**: redis123
+- **Database**: 0 (default)
+
 ## 📦 Development Commands
 
 ### Application Commands
@@ -131,8 +142,9 @@ NODE_ENV=development
 LOG_LEVEL=info
 
 # Database  
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/cronx_dev
+DATABASE_URL=postgresql://postgres:postgres@localhost:5433/cronx_dev
 REDIS_HOST=localhost
+REDIS_PORT=6379
 REDIS_PASSWORD=redis123
 
 # Authentication
@@ -190,7 +202,8 @@ pnpm test:web --watch
 
 ### Redis Management  
 - **Redis Commander**: http://localhost:8081 - Redis web interface
-- **CLI Access**: `docker exec -it cronx-redis redis-cli`
+- **CLI Access**: `docker exec -it cronx-redis redis-cli -a redis123`
+- **Direct Connection**: `redis-cli -h localhost -p 6379 -a redis123`
 
 ### Logging
 - **API Logs**: `apps/api/logs/` directory
