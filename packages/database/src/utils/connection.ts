@@ -1,6 +1,10 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '../schemas';
+import { config } from 'dotenv';
+
+// Load environment variables
+config();
 
 // Connection configuration
 const connectionConfig = {
@@ -17,7 +21,7 @@ const connectionConfig = {
 
 // Create connection
 const connectionString = process.env.DATABASE_URL || 
-  `postgresql://${connectionConfig.username}:${connectionConfig.password}@${connectionConfig.host}:${connectionConfig.port}/${connectionConfig.database}`;
+  `postgresql://${connectionConfig.username}${connectionConfig.password ? ':' + connectionConfig.password : ''}@${connectionConfig.host}:${connectionConfig.port}/${connectionConfig.database}`;
 
 // Create postgres client
 export const client = postgres(connectionString, {
@@ -25,6 +29,8 @@ export const client = postgres(connectionString, {
   idle_timeout: connectionConfig.idle_timeout,
   connect_timeout: connectionConfig.connect_timeout,
   ssl: connectionConfig.ssl,
+  // Force TCP connection for local development
+  socket: false,
 });
 
 // Create drizzle instance

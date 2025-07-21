@@ -1,16 +1,25 @@
-import { db } from '../utils/connection';
+import { db, checkConnection, closeConnection } from '../utils/connection';
 import { users, httpTemplates, cronJobs } from '../schemas';
-import bcrypt from 'bcrypt';
+import { createHash } from 'crypto';
 
 async function seedDatabase() {
   console.log('🌱 Seeding database...');
+
+  // Check database connection first
+  const isConnected = await checkConnection();
+  if (!isConnected) {
+    console.error('❌ Failed to connect to database. Make sure PostgreSQL is running on port 5433');
+    process.exit(1);
+  }
+
+  console.log('✅ Database connection established');
 
   try {
     // Create demo user
     const [user] = await db.insert(users).values({
       email: 'demo@cronx.dev',
       username: 'demo_user',
-      passwordHash: await bcrypt.hash('demo123', 10),
+      passwordHash: createHash('sha256').update('demo123').digest('hex'),
       firstName: 'Demo',
       lastName: 'User',
       isVerified: true,
@@ -52,6 +61,8 @@ async function seedDatabase() {
   } catch (error) {
     console.error('❌ Database seeding failed:', error);
     process.exit(1);
+  } finally {
+    await closeConnection();
   }
 }
 
