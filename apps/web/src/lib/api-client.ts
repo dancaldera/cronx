@@ -118,6 +118,16 @@ class ApiClient {
     useAuthStore.getState().logout();
   }
 
+  async requestPasswordReset(email: string) {
+    const response = await this.client.post('/auth/request-password-reset', { email });
+    return response.data;
+  }
+
+  async resetPassword(token: string, password: string) {
+    const response = await this.client.post('/auth/reset-password', { token, password });
+    return response.data;
+  }
+
   // HTTP Templates endpoints
   async getHttpTemplates() {
     const response = await this.client.get('/http-templates');

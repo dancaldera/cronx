@@ -120,12 +120,21 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     : user?.username
                   }
                 </p>
-                <button
-                  onClick={handleLogout}
-                  className="text-xs text-gray-500 hover:text-gray-700"
-                >
-                  Sign out
-                </button>
+                <div className="flex space-x-2 text-xs">
+                  <Link
+                    href="/dashboard/profile"
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    Profile
+                  </Link>
+                  <span className="text-gray-300">|</span>
+                  <button
+                    onClick={handleLogout}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    Sign out
+                  </button>
+                </div>
               </div>
             </div>
           </div>

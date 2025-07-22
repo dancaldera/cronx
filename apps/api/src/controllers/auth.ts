@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { db, users, insertUserSchema, updateUserSchema } from '../database';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, gt } from 'drizzle-orm';
 import { generateTokens, verifyToken, AuthRequest } from '../middleware/auth';
 import winston from 'winston';
 import { z } from 'zod';
@@ -353,6 +354,161 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
     } else {
       res.status(500).json({ 
         error: 'Failed to update profile',
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+};
+
+// Schema for password reset request
+const requestPasswordResetSchema = z.object({
+  email: z.string().email('Invalid email format'),
+});
+
+// Schema for password reset confirmation
+const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Reset token is required'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
+export const requestPasswordReset = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = requestPasswordResetSchema.parse(req.body);
+
+    // Find user by email
+    const [user] = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        isActive: users.isActive,
+      })
+      .from(users)
+      .where(and(
+        eq(users.email, email),
+        eq(users.isActive, true)
+      ))
+      .limit(1);
+
+    // Always return success to prevent email enumeration attacks
+    if (!user) {
+      logger.warn('Password reset requested for non-existent email', { email });
+      res.json({
+        success: true,
+        message: 'If an account with that email exists, a password reset link has been sent',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+
+    // Store reset token in database
+    await db
+      .update(users)
+      .set({
+        resetPasswordToken: resetToken,
+        resetPasswordExpires: resetTokenExpires,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, user.id));
+
+    // TODO: In production, send email with reset link
+    // For now, just log the token (remove this in production)
+    logger.info('Password reset token generated', { 
+      userId: user.id, 
+      email: user.email,
+      resetToken, // Remove this in production
+    });
+
+    res.json({
+      success: true,
+      message: 'If an account with that email exists, a password reset link has been sent',
+      // TODO: Remove this in production - only for development testing
+      resetToken,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Password reset request failed:', error);
+    
+    if (error instanceof z.ZodError) {
+      res.status(400).json({
+        error: 'Invalid input data',
+        details: error.errors,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(500).json({
+        error: 'Password reset request failed',
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token, password } = resetPasswordSchema.parse(req.body);
+
+    // Find user with valid reset token
+    const [user] = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        resetPasswordToken: users.resetPasswordToken,
+        resetPasswordExpires: users.resetPasswordExpires,
+      })
+      .from(users)
+      .where(and(
+        eq(users.resetPasswordToken, token),
+        gt(users.resetPasswordExpires, new Date()),
+        eq(users.isActive, true)
+      ))
+      .limit(1);
+
+    if (!user) {
+      res.status(400).json({
+        error: 'Invalid or expired reset token',
+        timestamp: new Date().toISOString()
+      });
+      return;
+    }
+
+    // Hash new password
+    const saltRounds = 12;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
+
+    // Update password and clear reset token
+    await db
+      .update(users)
+      .set({
+        passwordHash,
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, user.id));
+
+    logger.info('Password reset successful', { userId: user.id, email: user.email });
+
+    res.json({
+      success: true,
+      message: 'Password has been reset successfully',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Password reset failed:', error);
+    
+    if (error instanceof z.ZodError) {
+      res.status(400).json({
+        error: 'Invalid input data',
+        details: error.errors,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(500).json({
+        error: 'Password reset failed',
         timestamp: new Date().toISOString()
       });
     }
