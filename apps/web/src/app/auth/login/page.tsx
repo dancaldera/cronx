@@ -6,9 +6,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/auth-store';
+import { AnimatedPage } from '@/components/ui/animated-page';
+import { formVariants, fieldVariants, buttonVariants } from '@/lib/animations';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -123,24 +126,33 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
+    <AnimatedPage className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <motion.div 
+        className="max-w-md w-full space-y-8"
+        variants={formVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div variants={fieldVariants}>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Sign in to CronX
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             HTTP Automation Platform with CRON Scheduling
           </p>
-        </div>
+        </motion.div>
         
-        <form 
+        <motion.form 
           className="mt-8 space-y-6" 
           onSubmit={handleSubmit(onSubmit)}
           noValidate
+          variants={fieldVariants}
         >
 
-          <div className="rounded-md shadow-sm -space-y-px">
+          <motion.div 
+            className="rounded-md shadow-sm -space-y-px"
+            variants={fieldVariants}
+          >
             <div>
               <label htmlFor="email" className="sr-only">
                 Email address
@@ -190,13 +202,16 @@ export default function LoginPage() {
                 <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
               )}
             </div>
-          </div>
+          </motion.div>
 
-          <div>
-            <button
+          <motion.div variants={fieldVariants}>
+            <motion.button
               type="submit"
               disabled={isLoading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              variants={buttonVariants}
+              whileHover="hover"
+              whileTap="tap"
               onClick={(e) => {
                 console.log('🖱️ Submit button clicked');
                 // Form will handle submission through onSubmit
@@ -213,10 +228,13 @@ export default function LoginPage() {
               ) : (
                 'Sign in'
               )}
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
 
-          <div className="flex items-center justify-between">
+          <motion.div 
+            className="flex items-center justify-between"
+            variants={fieldVariants}
+          >
             <div className="text-sm">
               <Link
                 href="/auth/forgot-password"
@@ -233,9 +251,9 @@ export default function LoginPage() {
                 Create an account
               </Link>
             </div>
-          </div>
-        </form>
-      </div>
-    </div>
+          </motion.div>
+        </motion.form>
+      </motion.div>
+    </AnimatedPage>
   );
 }
