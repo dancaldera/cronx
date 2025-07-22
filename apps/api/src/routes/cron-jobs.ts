@@ -1,0 +1,27 @@
+import express from 'express';
+import { authMiddleware } from '../middleware/auth';
+import {
+  createCronJob,
+  getCronJobs,
+  getCronJobById,
+  updateCronJob,
+  deleteCronJob,
+  toggleCronJob,
+  executeCronJob,
+} from '../controllers/cron-jobs';
+
+const router = express.Router();
+
+// Apply authentication middleware to all routes
+router.use(authMiddleware);
+
+// Routes
+router.post('/', createCronJob);
+router.get('/', getCronJobs);
+router.get('/:id', getCronJobById);
+router.put('/:id', updateCronJob);
+router.delete('/:id', deleteCronJob);
+router.patch('/:id/toggle', toggleCronJob);
+router.post('/:id/execute', executeCronJob);
+
+export default router;

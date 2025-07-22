@@ -3,8 +3,6 @@ import path from 'path';
 
 // Load environment variables FIRST before any other imports
 const envPath = path.resolve(__dirname, '../.env');
-console.log('Trying to load .env from:', envPath);
-console.log('File exists:', require('fs').existsSync(envPath));
 config({ path: envPath });
 
 import express from 'express';
@@ -83,12 +81,15 @@ app.get('/api/health', async (req, res) => {
 
 // Import routes
 import authRoutes from './routes/auth';
+import httpTemplateRoutes from './routes/http-templates';
+import cronJobRoutes from './routes/cron-jobs';
+import executionLogRoutes from './routes/execution-logs';
 
 // Route handlers
 app.use('/api/auth', authRoutes);
-// TODO: Add remaining route handlers
-// app.use('/api/crons', cronRoutes);
-// app.use('/api/http-templates', templateRoutes);
+app.use('/api/http-templates', httpTemplateRoutes);
+app.use('/api/cron-jobs', cronJobRoutes);
+app.use('/api/execution-logs', executionLogRoutes);
 
 // Global error handler
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
