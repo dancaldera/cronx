@@ -10,6 +10,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint src --ext .ts",
+    "cleanup": "./scripts/cleanup.sh",
+    "dev:clean": "npm run cleanup && npm run dev",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/database/scripts/migrate.ts",
     "db:studio": "drizzle-kit studio",
