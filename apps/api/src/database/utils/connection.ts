@@ -1,3 +1,12 @@
+import { config } from 'dotenv';
+import path from 'path';
+
+// Load environment variables if not already loaded
+if (!process.env.DATABASE_URL) {
+  const envPath = path.resolve(__dirname, '../../../.env');
+  config({ path: envPath });
+}
+
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '../schemas';
