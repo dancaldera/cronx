@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -41,6 +42,9 @@ export default function RegisterPage() {
     setIsLoading(true);
     setError(null);
 
+    // Show loading toast
+    const loadingToast = toast.loading('Creating your account...');
+
     try {
       const { confirmPassword, ...registrationData } = data;
       const response = await apiClient.register(registrationData);
@@ -48,15 +52,34 @@ export default function RegisterPage() {
       if (response.success && response.user && response.tokens) {
         const { user, tokens } = response;
         login(user, tokens.accessToken, tokens.refreshToken);
+        
+        // Show success toast and redirect
+        toast.success(`Welcome to CronX, ${user.firstName || user.username}!`, {
+          id: loadingToast,
+          description: 'Your account has been created successfully.',
+        });
+        
         router.push('/dashboard');
       } else {
-        setError('Registration failed. Invalid response from server.');
+        toast.error('Registration failed', {
+          id: loadingToast,
+          description: 'Invalid response from server.',
+        });
       }
     } catch (err: any) {
-      setError(
-        err.response?.data?.error || 
-        'Registration failed. Please try again.'
-      );
+      let errorMessage = 'Please try again.';
+      let errorTitle = 'Registration failed';
+      
+      if (err.response?.status === 400) {
+        errorMessage = err.response?.data?.error || 'Please check your information.';
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      }
+      
+      toast.error(errorTitle, {
+        id: loadingToast,
+        description: errorMessage,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -75,11 +98,6 @@ export default function RegisterPage() {
         </div>
         
         <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <div className="text-sm text-red-700">{error}</div>
-            </div>
-          )}
 
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">

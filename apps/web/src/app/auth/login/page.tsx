@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -41,6 +42,9 @@ export default function LoginPage() {
     setIsLoading(true);
     setError(null);
 
+    // Show loading toast
+    const loadingToast = toast.loading('Signing in...');
+
     try {
       console.log('📡 Attempting login API call...');
       const response = await apiClient.login(data.email, data.password);
@@ -64,11 +68,21 @@ export default function LoginPage() {
         });
         
         login(user, tokens.accessToken, tokens.refreshToken);
+        
+        // Show success toast and redirect
+        toast.success(`Welcome back, ${user.firstName || user.username}!`, {
+          id: loadingToast,
+          description: 'You have been successfully logged in.',
+        });
+        
         console.log('🔄 Redirecting to dashboard...');
         router.push('/dashboard');
       } else {
         console.warn('⚠️ Login response missing success or data:', response);
-        setError('Login failed. Invalid response from server.');
+        toast.error('Login failed', {
+          id: loadingToast,
+          description: 'Invalid response from server.',
+        });
       }
     } catch (err: any) {
       console.error('❌ Login error:', {
@@ -79,21 +93,29 @@ export default function LoginPage() {
         fullError: err
       });
       
-      let errorMessage = 'Login failed. Please try again.';
+      let errorMessage = 'Please try again.';
+      let errorTitle = 'Login failed';
       
       if (err.response?.status === 401) {
-        errorMessage = 'Invalid email or password. Please check your credentials.';
+        errorTitle = 'Invalid credentials';
+        errorMessage = 'Please check your email and password.';
       } else if (err.response?.status === 429) {
-        errorMessage = 'Too many login attempts. Please try again later.';
+        errorTitle = 'Too many attempts';
+        errorMessage = 'Please try again later.';
       } else if (err.response?.status === 500) {
-        errorMessage = 'Server error. Please try again later.';
+        errorTitle = 'Server error';
+        errorMessage = 'Please try again later.';
       } else if (err.response?.data?.error) {
         errorMessage = err.response.data.error;
       } else if (!navigator.onLine) {
-        errorMessage = 'No internet connection. Please check your network.';
+        errorTitle = 'No internet connection';
+        errorMessage = 'Please check your network.';
       }
       
-      setError(errorMessage);
+      toast.error(errorTitle, {
+        id: loadingToast,
+        description: errorMessage,
+      });
     } finally {
       setIsLoading(false);
       console.log('🏁 Login attempt finished');
@@ -117,11 +139,6 @@ export default function LoginPage() {
           onSubmit={handleSubmit(onSubmit)}
           noValidate
         >
-          {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <div className="text-sm text-red-700">{error}</div>
-            </div>
-          )}
 
           <div className="rounded-md shadow-sm -space-y-px">
             <div>

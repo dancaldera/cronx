@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { apiClient } from '@/lib/api-client';
 
 const forgotPasswordSchema = z.object({
@@ -31,23 +32,41 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
     setError(null);
 
+    // Show loading toast
+    const loadingToast = toast.loading('Sending reset email...');
+
     try {
       await apiClient.requestPasswordReset(data.email);
+      
+      toast.success('Password reset email sent', {
+        id: loadingToast,
+        description: 'Check your email for reset instructions.',
+      });
+      
       setIsSuccess(true);
     } catch (err: any) {
       console.error('Password reset request failed:', err);
       
-      let errorMessage = 'Failed to send reset email. Please try again.';
+      let errorMessage = 'Please try again.';
+      let errorTitle = 'Failed to send reset email';
       
       if (err.response?.status === 429) {
-        errorMessage = 'Too many requests. Please try again later.';
+        errorTitle = 'Too many requests';
+        errorMessage = 'Please try again later.';
       } else if (err.response?.status === 500) {
-        errorMessage = 'Server error. Please try again later.';
+        errorTitle = 'Server error';
+        errorMessage = 'Please try again later.';
       } else if (err.response?.data?.error) {
         errorMessage = err.response.data.error;
       } else if (!navigator.onLine) {
-        errorMessage = 'No internet connection. Please check your network.';
+        errorTitle = 'No internet connection';
+        errorMessage = 'Please check your network.';
       }
+      
+      toast.error(errorTitle, {
+        id: loadingToast,
+        description: errorMessage,
+      });
       
       setError(errorMessage);
     } finally {

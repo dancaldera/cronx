@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { apiClient } from '@/lib/api-client';
 
 const resetPasswordSchema = z.object({
@@ -18,7 +19,7 @@ const resetPasswordSchema = z.object({
 
 type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,25 +53,44 @@ export default function ResetPasswordPage() {
     setIsLoading(true);
     setError(null);
 
+    // Show loading toast
+    const loadingToast = toast.loading('Resetting password...');
+
     try {
       await apiClient.resetPassword(token, data.password);
+      
+      toast.success('Password reset successful', {
+        id: loadingToast,
+        description: 'Your password has been updated successfully.',
+      });
+      
       setIsSuccess(true);
     } catch (err: any) {
       console.error('Password reset failed:', err);
       
-      let errorMessage = 'Password reset failed. Please try again.';
+      let errorMessage = 'Please try again.';
+      let errorTitle = 'Password reset failed';
       
       if (err.response?.status === 400) {
-        errorMessage = 'Invalid or expired reset token. Please request a new password reset.';
+        errorTitle = 'Invalid or expired token';
+        errorMessage = 'Please request a new password reset.';
       } else if (err.response?.status === 429) {
-        errorMessage = 'Too many requests. Please try again later.';
+        errorTitle = 'Too many requests';
+        errorMessage = 'Please try again later.';
       } else if (err.response?.status === 500) {
-        errorMessage = 'Server error. Please try again later.';
+        errorTitle = 'Server error';
+        errorMessage = 'Please try again later.';
       } else if (err.response?.data?.error) {
         errorMessage = err.response.data.error;
       } else if (!navigator.onLine) {
-        errorMessage = 'No internet connection. Please check your network.';
+        errorTitle = 'No internet connection';
+        errorMessage = 'Please check your network.';
       }
+      
+      toast.error(errorTitle, {
+        id: loadingToast,
+        description: errorMessage,
+      });
       
       setError(errorMessage);
     } finally {
@@ -226,5 +246,17 @@ export default function ResetPasswordPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+      </div>
+    }>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }

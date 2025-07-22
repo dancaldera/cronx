@@ -4,20 +4,21 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/auth-store';
 import { apiClient } from '@/lib/api-client';
 
 const profileSchema = z.object({
-  firstName: z.string().max(100).optional().or(z.literal('')),
-  lastName: z.string().max(100).optional().or(z.literal('')),
-  bio: z.string().max(500).optional().or(z.literal('')),
-  themePreference: z.enum(['light', 'dark', 'system']).default('system'),
-  timezone: z.string().default('UTC'),
-  dateFormat: z.string().default('MM/dd/yyyy'),
-  timeFormat: z.enum(['12h', '24h']).default('12h'),
-  language: z.string().default('en'),
-  emailNotifications: z.boolean().default(true),
-  pushNotifications: z.boolean().default(true),
+  firstName: z.string().max(100).optional(),
+  lastName: z.string().max(100).optional(),
+  bio: z.string().max(500).optional(),
+  themePreference: z.enum(['light', 'dark', 'system']),
+  timezone: z.string(),
+  dateFormat: z.string(),
+  timeFormat: z.enum(['12h', '24h']),
+  language: z.string(),
+  emailNotifications: z.boolean(),
+  pushNotifications: z.boolean(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -71,6 +72,9 @@ export default function ProfilePage() {
     setError(null);
     setSuccess(null);
 
+    // Show loading toast
+    const loadingToast = toast.loading('Updating profile...');
+
     try {
       const response = await apiClient.request({
         method: 'PUT',
@@ -80,26 +84,47 @@ export default function ProfilePage() {
 
       if (response.success && response.user) {
         updateUser(response.user);
+        
+        toast.success('Profile updated', {
+          id: loadingToast,
+          description: 'Your profile has been updated successfully.',
+        });
+        
         setSuccess('Profile updated successfully!');
       } else {
+        toast.error('Update failed', {
+          id: loadingToast,
+          description: 'Failed to update profile. Please try again.',
+        });
+        
         setError('Failed to update profile. Please try again.');
       }
     } catch (err: any) {
       console.error('Profile update failed:', err);
       
-      let errorMessage = 'Failed to update profile. Please try again.';
+      let errorMessage = 'Please try again.';
+      let errorTitle = 'Update failed';
       
       if (err.response?.status === 401) {
-        errorMessage = 'Session expired. Please log in again.';
+        errorTitle = 'Session expired';
+        errorMessage = 'Please log in again.';
       } else if (err.response?.status === 400) {
-        errorMessage = 'Invalid data. Please check your inputs.';
+        errorTitle = 'Invalid data';
+        errorMessage = 'Please check your inputs.';
       } else if (err.response?.status === 500) {
-        errorMessage = 'Server error. Please try again later.';
+        errorTitle = 'Server error';
+        errorMessage = 'Please try again later.';
       } else if (err.response?.data?.error) {
         errorMessage = err.response.data.error;
       } else if (!navigator.onLine) {
-        errorMessage = 'No internet connection. Please check your network.';
+        errorTitle = 'No internet connection';
+        errorMessage = 'Please check your network.';
       }
+      
+      toast.error(errorTitle, {
+        id: loadingToast,
+        description: errorMessage,
+      });
       
       setError(errorMessage);
     } finally {
