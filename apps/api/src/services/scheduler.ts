@@ -397,13 +397,13 @@ class SchedulerService {
     cronJobId: string;
     name: string;
     isScheduled: boolean;
-    nextExecution?: Date;
+    nextExecution?: Date | null;
   }> {
     return Array.from(this.scheduledJobs.entries()).map(([id, scheduledJob]) => ({
       cronJobId: id,
       name: scheduledJob.cronJob.name,
       isScheduled: true,
-      nextExecution: scheduledJob.cronJob.nextExecution || undefined,
+      nextExecution: scheduledJob.cronJob.nextExecution || null,
     }));
   }
 

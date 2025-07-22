@@ -4,6 +4,7 @@ import { db, users, insertUserSchema, updateUserSchema } from '../database';
 import { eq, and } from 'drizzle-orm';
 import { generateTokens, verifyToken, AuthRequest } from '../middleware/auth';
 import winston from 'winston';
+import { z } from 'zod';
 
 const logger = winston.createLogger({
   level: 'info',
@@ -11,9 +12,25 @@ const logger = winston.createLogger({
   defaultMeta: { service: 'auth-controller' },
 });
 
+// Schema for registration that accepts password instead of passwordHash
+const registerSchema = z.object({
+  email: z.string().email(),
+  username: z.string().min(3).max(100),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  firstName: z.string().min(1).max(100).optional(),
+  lastName: z.string().min(1).max(100).optional(),
+  themePreference: z.enum(['light', 'dark', 'system']).default('system'),
+  timezone: z.string().default('UTC'),
+  dateFormat: z.string().default('MM/dd/yyyy'),
+  timeFormat: z.enum(['12h', '24h']).default('12h'),
+  language: z.string().default('en'),
+  emailNotifications: z.boolean().default(true),
+  pushNotifications: z.boolean().default(true),
+});
+
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
-    const validatedData = insertUserSchema.parse(req.body);
+    const validatedData = registerSchema.parse(req.body);
     
     // Check if user already exists
     const existingUser = await db
@@ -47,14 +64,24 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     // Hash password
     const saltRounds = 12;
-    const passwordHash = await bcrypt.hash(validatedData.passwordHash, saltRounds);
+    const passwordHash = await bcrypt.hash(validatedData.password, saltRounds);
 
     // Create user
     const [newUser] = await db
       .insert(users)
       .values({
-        ...validatedData,
+        email: validatedData.email,
+        username: validatedData.username,
         passwordHash,
+        firstName: validatedData.firstName,
+        lastName: validatedData.lastName,
+        themePreference: validatedData.themePreference,
+        timezone: validatedData.timezone,
+        dateFormat: validatedData.dateFormat,
+        timeFormat: validatedData.timeFormat,
+        language: validatedData.language,
+        emailNotifications: validatedData.emailNotifications,
+        pushNotifications: validatedData.pushNotifications,
       })
       .returning({
         id: users.id,
