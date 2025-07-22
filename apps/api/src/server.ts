@@ -1,10 +1,19 @@
+import { config } from 'dotenv';
+import path from 'path';
+
+// Load environment variables FIRST before any other imports
+const envPath = path.resolve(__dirname, '../.env');
+console.log('Trying to load .env from:', envPath);
+console.log('File exists:', require('fs').existsSync(envPath));
+config({ path: envPath });
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import winston from 'winston';
-import { checkConnection } from '@cronx/database';
+import { checkConnection } from './database/utils/connection';
 
 // Configure Winston logger
 const logger = winston.createLogger({

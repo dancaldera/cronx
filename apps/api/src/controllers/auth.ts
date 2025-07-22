@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcrypt';
-import { db, users, insertUserSchema, updateUserSchema } from '@cronx/database';
+import bcrypt from 'bcryptjs';
+import { db, users, insertUserSchema, updateUserSchema } from '../database';
 import { eq, and } from 'drizzle-orm';
 import { generateTokens, verifyToken, AuthRequest } from '../middleware/auth';
 import winston from 'winston';

@@ -5,7 +5,7 @@ async function runMigrations() {
   console.log('🔄 Running database migrations...');
   
   try {
-    await migrate(db, { migrationsFolder: './src/migrations' });
+    await migrate(db, { migrationsFolder: './src/database/migrations' });
     console.log('✅ Database migrations completed successfully');
   } catch (error) {
     console.error('❌ Database migration failed:', error);

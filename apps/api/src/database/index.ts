@@ -7,7 +7,6 @@ export * from './schemas/analytics';
 
 // Export database utilities
 export * from './utils/connection';
-export * from './utils/client';
 
 // Export types
 export type * from './schemas/types';
