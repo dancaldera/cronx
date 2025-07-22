@@ -101,9 +101,9 @@ app.get('/api/health', async (req, res) => {
 
 // Import routes
 import authRoutes from './routes/auth';
-import httpTemplateRoutes from './routes/http-templates';
-import cronJobRoutes from './routes/cron-jobs';
-import executionLogRoutes from './routes/execution-logs';
+const httpTemplateRoutes = require('./routes/http-templates');
+const cronJobRoutes = require('./routes/cron-jobs');
+const executionLogRoutes = require('./routes/execution-logs');
 
 // Route handlers
 app.use('/api/auth', authRoutes);

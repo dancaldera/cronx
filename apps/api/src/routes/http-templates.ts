@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Router } from 'express';
 import { authMiddleware } from '../middleware/auth';
 import {
   createHttpTemplate,
@@ -9,7 +9,7 @@ import {
   testHttpTemplate,
 } from '../controllers/http-templates';
 
-const router = express.Router();
+const router: Router = express.Router();
 
 // Apply authentication middleware to all routes
 router.use(authMiddleware);
@@ -22,4 +22,4 @@ router.put('/:id', updateHttpTemplate);
 router.delete('/:id', deleteHttpTemplate);
 router.post('/:id/test', testHttpTemplate);
 
-export default router;
+export = router;

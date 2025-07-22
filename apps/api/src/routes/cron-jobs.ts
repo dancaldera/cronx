@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Router } from 'express';
 import { authMiddleware } from '../middleware/auth';
 import {
   createCronJob,
@@ -10,7 +10,7 @@ import {
   executeCronJob,
 } from '../controllers/cron-jobs';
 
-const router = express.Router();
+const router: Router = express.Router();
 
 // Apply authentication middleware to all routes
 router.use(authMiddleware);
@@ -24,4 +24,4 @@ router.delete('/:id', deleteCronJob);
 router.patch('/:id/toggle', toggleCronJob);
 router.post('/:id/execute', executeCronJob);
 
-export default router;
+export = router;

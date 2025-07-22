@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Router } from 'express';
 import { authMiddleware } from '../middleware/auth';
 import {
   getExecutionLogs,
@@ -6,7 +6,7 @@ import {
   getExecutionStats,
 } from '../controllers/execution-logs';
 
-const router = express.Router();
+const router: Router = express.Router();
 
 // Apply authentication middleware to all routes
 router.use(authMiddleware);
@@ -16,4 +16,4 @@ router.get('/', getAllExecutionLogs);
 router.get('/stats', getExecutionStats);
 router.get('/cron-job/:cronJobId', getExecutionLogs);
 
-export default router;
+export = router;
