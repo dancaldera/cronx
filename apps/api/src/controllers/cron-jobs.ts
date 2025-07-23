@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { db, cronJobs, httpTemplates, insertCronJobSchema, updateCronJobSchema } from '../database';
+import { db, cronJobs, httpTemplates, executionLogs, insertCronJobSchema, updateCronJobSchema } from '../database';
 import { eq, and, isNull, desc } from 'drizzle-orm';
 import { AuthRequest } from '../middleware/auth';
 import winston from 'winston';
@@ -567,6 +567,75 @@ export const executeCronJob = async (req: AuthRequest, res: Response): Promise<v
     
     res.status(500).json({
       error: 'Failed to execute CRON job',
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+// Get CRON Jobs stats for real-time updates
+export const getCronJobsStats = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ 
+        error: 'User not authenticated',
+        timestamp: new Date().toISOString()
+      });
+      return;
+    }
+
+    // Get basic stats
+    const jobs = await db
+      .select({
+        id: cronJobs.id,
+        executionCount: cronJobs.executionCount,
+        successCount: cronJobs.successCount,
+        failureCount: cronJobs.failureCount,
+        lastExecution: cronJobs.lastExecution,
+        nextExecution: cronJobs.nextExecution,
+      })
+      .from(cronJobs)
+      .where(and(
+        eq(cronJobs.userId, userId),
+        isNull(cronJobs.deletedAt)
+      ));
+
+    // Get last response data for each job
+    const statsWithLastResponse = await Promise.all(
+      jobs.map(async (job) => {
+        const [lastResponse] = await db
+          .select({
+            executionTime: executionLogs.executionTime,
+            status: executionLogs.status,
+            responseStatus: executionLogs.responseStatus,
+            responseBody: executionLogs.responseBody,
+            responseHeaders: executionLogs.responseHeaders,
+            executionDuration: executionLogs.executionDuration,
+            errorMessage: executionLogs.errorMessage,
+            retryAttempt: executionLogs.retryAttempt,
+          })
+          .from(executionLogs)
+          .where(eq(executionLogs.cronJobId, job.id))
+          .orderBy(desc(executionLogs.executionTime))
+          .limit(1);
+
+        return {
+          ...job,
+          lastResponse: lastResponse || null,
+        };
+      })
+    );
+
+    res.json({
+      success: true,
+      data: statsWithLastResponse,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Error fetching CRON jobs stats:', error);
+    
+    res.status(500).json({
+      error: 'Failed to fetch CRON jobs stats',
       timestamp: new Date().toISOString(),
     });
   }

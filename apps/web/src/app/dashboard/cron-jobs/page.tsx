@@ -9,12 +9,35 @@ import {
   PauseIcon,
   TrashIcon,
   PencilIcon,
+  EyeIcon,
+  BoltIcon,
 } from "@heroicons/react/24/outline";
+import {
+  PauseIcon as PauseIconSolid,
+} from "@heroicons/react/24/solid";
 import Link from "next/link";
+import { useCronRealtime } from "@/hooks/use-cron-realtime";
+import { RealtimeStats } from "@/components/cron-jobs/realtime-stats";
+import { LastResponseModal } from "@/components/cron-jobs/last-response-modal";
 
 export default function CronJobsPage() {
   const [selectedJob, setSelectedJob] = useState<string | null>(null);
+  const [lastResponseModal, setLastResponseModal] = useState<{
+    isOpen: boolean;
+    jobName: string;
+    responseData: any;
+  }>({
+    isOpen: false,
+    jobName: '',
+    responseData: null,
+  });
   const queryClient = useQueryClient();
+  
+  // Set up real-time updates
+  const { realtimeStats } = useCronRealtime({
+    refreshInterval: 3000, // Update every 3 seconds
+    enableRealtimeUpdates: true,
+  });
 
   const {
     data: cronJobs,
@@ -70,6 +93,17 @@ export default function CronJobsPage() {
       await executeJobMutation.mutateAsync(id);
     } catch (error) {
       console.error("Failed to execute job:", error);
+    }
+  };
+
+  const handleViewLastResponse = (jobName: string, jobId: string) => {
+    const responseData = realtimeStats[jobId]?.lastResponse;
+    if (responseData) {
+      setLastResponseModal({
+        isOpen: true,
+        jobName,
+        responseData,
+      });
     }
   };
 
@@ -212,56 +246,82 @@ export default function CronJobsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {formatNextExecution(job.nextExecution)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       <div className="space-y-1">
-                        <div>{job.executionCount} executions</div>
-                        <div className="flex space-x-2">
-                          <span className="text-green-600 dark:text-green-400">
-                            {job.successCount} ✓
-                          </span>
-                          <span className="text-red-600 dark:text-red-400">
-                            {job.failureCount} ✗
-                          </span>
+                        <div className="text-xs font-mono">
+                          {formatNextExecution(realtimeStats[job.id]?.nextExecution ?? job.nextExecution)}
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                      <button
-                        onClick={() => handleExecuteJob(job.id)}
-                        disabled={executeJobMutation.isPending}
-                        className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 disabled:opacity-50"
-                        title="Execute now"
-                      >
-                        <PlayIcon className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleToggleJob(job.id, job.isEnabled)}
-                        disabled={toggleJobMutation.isPending}
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 disabled:opacity-50"
-                        title={job.isEnabled ? "Pause job" : "Resume job"}
-                      >
-                        {job.isEnabled ? (
-                          <PauseIcon className="h-5 w-5" />
-                        ) : (
-                          <PlayIcon className="h-5 w-5" />
-                        )}
-                      </button>
-                      <button
-                        className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300"
-                        title="Edit job"
-                      >
-                        <PencilIcon className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteJob(job.id)}
-                        disabled={deleteJobMutation.isPending}
-                        className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 disabled:opacity-50"
-                        title="Delete job"
-                      >
-                        <TrashIcon className="h-5 w-5" />
-                      </button>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      <RealtimeStats
+                        executionCount={realtimeStats[job.id]?.executionCount ?? job.executionCount}
+                        successCount={realtimeStats[job.id]?.successCount ?? job.successCount}
+                        failureCount={realtimeStats[job.id]?.failureCount ?? job.failureCount}
+                        nextExecution={realtimeStats[job.id]?.nextExecution ?? job.nextExecution}
+                        lastExecution={realtimeStats[job.id]?.lastExecution ?? job.lastExecution}
+                        lastResponse={realtimeStats[job.id]?.lastResponse}
+                        isEnabled={job.isEnabled}
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end space-x-2">
+                        {/* Execute Now */}
+                        <button
+                          onClick={() => handleExecuteJob(job.id)}
+                          disabled={executeJobMutation.isPending}
+                          className="inline-flex items-center justify-center w-8 h-8 text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-300 disabled:opacity-50 transition-colors duration-200"
+                          title="Execute now"
+                        >
+                          <BoltIcon className="h-5 w-5" />
+                        </button>
+                        
+                        {/* Pause/Resume */}
+                        <button
+                          onClick={() => handleToggleJob(job.id, job.isEnabled)}
+                          disabled={toggleJobMutation.isPending}
+                          className={`inline-flex items-center justify-center w-8 h-8 disabled:opacity-50 transition-colors duration-200 ${
+                            job.isEnabled 
+                              ? "text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-300" 
+                              : "text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300"
+                          }`}
+                          title={job.isEnabled ? "Pause job" : "Resume job"}
+                        >
+                          {job.isEnabled ? (
+                            <PauseIconSolid className="h-5 w-5" />
+                          ) : (
+                            <PlayIcon className="h-5 w-5" />
+                          )}
+                        </button>
+                        
+                        {/* View Last Response */}
+                        <button
+                          onClick={() => handleViewLastResponse(job.name, job.id)}
+                          disabled={!realtimeStats[job.id]?.lastResponse}
+                          className="inline-flex items-center justify-center w-8 h-8 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-30 transition-colors duration-200"
+                          title="View last response"
+                        >
+                          <EyeIcon className="h-5 w-5" />
+                        </button>
+                        
+                        {/* Edit */}
+                        <Link
+                          href={`/dashboard/cron-jobs/${job.id}/edit`}
+                          className="inline-flex items-center justify-center w-8 h-8 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300 transition-colors duration-200"
+                          title="Edit job"
+                        >
+                          <PencilIcon className="h-5 w-5" />
+                        </Link>
+                        
+                        {/* Delete */}
+                        <button
+                          onClick={() => handleDeleteJob(job.id)}
+                          disabled={deleteJobMutation.isPending}
+                          className="inline-flex items-center justify-center w-8 h-8 text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 disabled:opacity-50 transition-colors duration-200"
+                          title="Delete job"
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -270,6 +330,14 @@ export default function CronJobsPage() {
           </div>
         </div>
       )}
+
+      {/* Last Response Modal */}
+      <LastResponseModal
+        isOpen={lastResponseModal.isOpen}
+        onClose={() => setLastResponseModal({ ...lastResponseModal, isOpen: false })}
+        cronJobName={lastResponseModal.jobName}
+        responseData={lastResponseModal.responseData}
+      />
     </div>
   );
 }

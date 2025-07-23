@@ -8,6 +8,7 @@ import {
   deleteCronJob,
   toggleCronJob,
   executeCronJob,
+  getCronJobsStats,
 } from '../controllers/cron-jobs';
 
 const router: Router = express.Router();
@@ -18,6 +19,7 @@ router.use(authMiddleware);
 // Routes
 router.post('/', createCronJob);
 router.get('/', getCronJobs);
+router.get('/stats', getCronJobsStats);
 router.get('/:id', getCronJobById);
 router.put('/:id', updateCronJob);
 router.delete('/:id', deleteCronJob);

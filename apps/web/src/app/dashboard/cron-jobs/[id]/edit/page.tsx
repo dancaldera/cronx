@@ -67,27 +67,31 @@ export default function EditCronJobPage({ params }: EditCronJobPageProps) {
 
   // Populate form with existing data
   useEffect(() => {
-    if (cronJobResponse?.data) {
+    if (cronJobResponse?.data && templatesResponse?.data) {
       const cronJob = cronJobResponse.data;
+      // Ensure the template still exists in the templates list
+      const templateExists = templatesResponse.data.some((template: any) => template.id === cronJob.httpTemplateId);
+      
       reset({
         name: cronJob.name,
         description: cronJob.description || "",
         cronExpression: cronJob.cronExpression,
         timezone: cronJob.timezone,
-        httpTemplateId: cronJob.httpTemplateId,
+        httpTemplateId: templateExists ? cronJob.httpTemplateId : "",
         isEnabled: cronJob.isEnabled,
         retryAttempts: cronJob.retryAttempts,
         timeoutSeconds: cronJob.timeoutSeconds,
       });
     }
-  }, [cronJobResponse, reset]);
+  }, [cronJobResponse, templatesResponse, reset]);
 
   const updateCronJobMutation = useMutation({
     mutationFn: (data: CronJobFormData) => apiClient.updateCronJob(params.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cronJob", params.id] });
       queryClient.invalidateQueries({ queryKey: ["cronJobs"] });
-      router.push(`/dashboard/cron-jobs/${params.id}`);
+      queryClient.invalidateQueries({ queryKey: ["cronStats"] });
+      router.push("/dashboard/cron-jobs");
     },
     onError: (error: any) => {
       console.error("Failed to update CRON job:", error);
@@ -103,6 +107,7 @@ export default function EditCronJobPage({ params }: EditCronJobPageProps) {
   };
 
   const cronExpression = watch("cronExpression");
+  const selectedTemplateId = watch("httpTemplateId");
 
   // Common CRON expressions for quick selection
   const commonExpressions = [
@@ -128,7 +133,7 @@ export default function EditCronJobPage({ params }: EditCronJobPageProps) {
     { label: "Australia/Sydney", value: "Australia/Sydney" },
   ];
 
-  if (jobLoading) {
+  if (jobLoading || templatesLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
@@ -153,11 +158,11 @@ export default function EditCronJobPage({ params }: EditCronJobPageProps) {
       {/* Header */}
       <div className="flex items-center space-x-4">
         <Link
-          href={`/dashboard/cron-jobs/${params.id}`}
+          href="/dashboard/cron-jobs"
           className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
         >
           <ArrowLeftIcon className="h-4 w-4 mr-1" />
-          Back to Job Details
+          Back to CRON Jobs
         </Link>
       </div>
 
@@ -477,7 +482,7 @@ export default function EditCronJobPage({ params }: EditCronJobPageProps) {
               : "Update CRON Job"}
           </button>
           <Link
-            href={`/dashboard/cron-jobs/${params.id}`}
+            href="/dashboard/cron-jobs"
             className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
             Cancel

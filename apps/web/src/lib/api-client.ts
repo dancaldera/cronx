@@ -231,6 +231,11 @@ class ApiClient {
     return response.data;
   }
 
+  async getCronJobsStats() {
+    const response = await this.client.get('/cron-jobs/stats');
+    return response.data;
+  }
+
   // Generic request method for custom requests
   async request<T = any>(config: AxiosRequestConfig): Promise<T> {
     const response = await this.client(config);

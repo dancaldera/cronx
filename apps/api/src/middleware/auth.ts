@@ -29,13 +29,13 @@ export const generateTokens = (user: { id: string; email: string; username: stri
     username: user.username,
   };
 
-  const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' } as jwt.SignOptions);
+  const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' } as jwt.SignOptions);
   const refreshToken = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions);
 
   return {
     accessToken,
     refreshToken,
-    expiresIn: 15 * 60, // 15 minutes in seconds
+    expiresIn: 24 * 60 * 60, // 24 hours in seconds
   };
 };
 
