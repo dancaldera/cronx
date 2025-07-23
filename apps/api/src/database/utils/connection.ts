@@ -33,15 +33,6 @@ const connectionString =
   process.env.DATABASE_URL ||
   `postgresql://${connectionConfig.username}${connectionConfig.password ? ":" + connectionConfig.password : ""}@${connectionConfig.host}:${connectionConfig.port}/${connectionConfig.database}`;
 
-console.log("Database connection config:", {
-  host: connectionConfig.host,
-  port: connectionConfig.port,
-  database: connectionConfig.database,
-  username: connectionConfig.username,
-  hasPassword: !!connectionConfig.password,
-  ssl: connectionConfig.ssl,
-});
-
 // Create postgres client with better error handling
 export const client = postgres(connectionString, {
   max: connectionConfig.max,
