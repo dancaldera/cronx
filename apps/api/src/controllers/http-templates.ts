@@ -287,6 +287,158 @@ export const deleteHttpTemplate = async (req: AuthRequest, res: Response): Promi
   }
 };
 
+// Test HTTP Template Data (for testing before saving)
+export const testHttpTemplateData = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ 
+        error: 'User not authenticated',
+        timestamp: new Date().toISOString()
+      });
+      return;
+    }
+
+    // Validate template data from request body
+    const templateData = req.body;
+    
+    if (!templateData.url || !templateData.method) {
+      res.status(400).json({
+        error: 'Missing required fields: url and method',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Execute HTTP request
+    const axios = await import('axios');
+    const startTime = Date.now();
+
+    try {
+      // Prepare request config
+      const requestConfig: any = {
+        method: templateData.method.toLowerCase(),
+        url: templateData.url,
+        headers: templateData.headers || {},
+        timeout: (templateData.timeoutSeconds || 30) * 1000,
+        validateStatus: () => true, // Accept all status codes
+        maxRedirects: templateData.followRedirects !== false ? 5 : 0,
+      };
+
+      // Add body for non-GET requests
+      if (templateData.body && !['GET', 'HEAD'].includes(templateData.method.toUpperCase())) {
+        try {
+          // Try to parse as JSON if it's a string
+          requestConfig.data = typeof templateData.body === 'string' 
+            ? JSON.parse(templateData.body) 
+            : templateData.body;
+        } catch {
+          // If not valid JSON, send as text
+          requestConfig.data = templateData.body;
+        }
+      }
+
+      // Add authentication
+      if (templateData.authType && templateData.authType !== 'none' && templateData.authConfig) {
+        const authConfig = typeof templateData.authConfig === 'string' 
+          ? JSON.parse(templateData.authConfig) 
+          : templateData.authConfig;
+
+        switch (templateData.authType) {
+          case 'bearer':
+            if (authConfig.token) {
+              requestConfig.headers['Authorization'] = `Bearer ${authConfig.token}`;
+            }
+            break;
+          case 'basic':
+            if (authConfig.username && authConfig.password) {
+              requestConfig.auth = {
+                username: authConfig.username,
+                password: authConfig.password,
+              };
+            }
+            break;
+          case 'api_key':
+            if (authConfig.header && authConfig.key) {
+              requestConfig.headers[authConfig.header] = authConfig.key;
+            }
+            break;
+        }
+      }
+
+      const response = await axios.default(requestConfig);
+      const executionTime = Date.now() - startTime;
+
+      // Check if status code is expected
+      const expectedCodes = templateData.expectedStatusCodes || [200];
+      const isSuccess = expectedCodes.includes(response.status);
+
+      logger.info('HTTP template data tested', {
+        userId,
+        url: templateData.url,
+        method: templateData.method,
+        status: response.status,
+        executionTime,
+        success: isSuccess,
+      });
+
+      // Limit response data size for display
+      let responseData = response.data;
+      if (typeof responseData === 'string' && responseData.length > 1000) {
+        responseData = responseData.substring(0, 1000) + '... (truncated)';
+      } else if (typeof responseData === 'object') {
+        responseData = JSON.stringify(responseData, null, 2);
+        if (responseData.length > 1000) {
+          responseData = responseData.substring(0, 1000) + '... (truncated)';
+        }
+      }
+
+      res.json({
+        success: true,
+        data: {
+          status: response.status,
+          statusText: response.statusText,
+          headers: response.headers,
+          data: responseData,
+          executionTime,
+          isSuccess,
+          expectedStatusCodes: expectedCodes,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (httpError: any) {
+      const executionTime = Date.now() - startTime;
+      
+      logger.warn('HTTP template data test failed', {
+        userId,
+        url: templateData.url,
+        method: templateData.method,
+        error: httpError.message,
+        executionTime,
+      });
+
+      res.json({
+        success: true,
+        data: {
+          error: httpError.message,
+          code: httpError.code,
+          executionTime,
+          isSuccess: false,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+  } catch (error) {
+    logger.error('Error testing HTTP template data:', error);
+    
+    res.status(500).json({
+      error: 'Failed to test HTTP template data',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
 // Test HTTP Template
 export const testHttpTemplate = async (req: AuthRequest, res: Response): Promise<void> => {
   try {

@@ -10,6 +10,7 @@ import {
   TrashIcon,
   PencilIcon,
 } from "@heroicons/react/24/outline";
+import Link from "next/link";
 
 export default function CronJobsPage() {
   const [selectedJob, setSelectedJob] = useState<string | null>(null);
@@ -113,13 +114,13 @@ export default function CronJobsPage() {
             Manage your scheduled HTTP requests and automation tasks
           </p>
         </div>
-        <button
-          type="button"
+        <Link
+          href="/dashboard/cron-jobs/create"
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         >
           <PlusIcon className="h-5 w-5 mr-2" />
           Create CRON Job
-        </button>
+        </Link>
       </div>
 
       {/* Jobs List */}
@@ -142,13 +143,13 @@ export default function CronJobsPage() {
             Get started by creating your first scheduled job.
           </p>
           <div className="mt-6">
-            <button
-              type="button"
+            <Link
+              href="/dashboard/cron-jobs/create"
               className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               <PlusIcon className="h-5 w-5 mr-2" />
               Create CRON Job
-            </button>
+            </Link>
           </div>
         </div>
       ) : (

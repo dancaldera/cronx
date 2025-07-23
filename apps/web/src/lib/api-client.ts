@@ -159,6 +159,11 @@ class ApiClient {
     return response.data;
   }
 
+  async testHttpTemplateData(data: any) {
+    const response = await this.client.post('/http-templates/test', data);
+    return response.data;
+  }
+
   // CRON Jobs endpoints
   async getCronJobs() {
     const response = await this.client.get('/cron-jobs');

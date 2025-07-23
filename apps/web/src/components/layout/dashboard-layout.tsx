@@ -16,6 +16,24 @@ const navigation = [
   { name: 'Analytics', href: '/dashboard/analytics', icon: '📈' },
 ];
 
+// Helper function to determine if a navigation item is active
+const isNavItemActive = (itemHref: string, currentPath: string): boolean => {
+  // Exact match for dashboard root
+  if (itemHref === '/dashboard') {
+    return currentPath === '/dashboard';
+  }
+  
+  // For other items, check if current path starts with the item href
+  // but ensure it's a proper path segment match
+  if (currentPath.startsWith(itemHref)) {
+    const remainder = currentPath.slice(itemHref.length);
+    // Either exact match or next character is a '/' (proper path segment)
+    return remainder === '' || remainder.startsWith('/');
+  }
+  
+  return false;
+};
+
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
@@ -72,7 +90,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </div>
               <nav className="mt-5 px-2 space-y-1">
                 {navigation.map((item) => {
-                  const isActive = pathname.startsWith(item.href);
+                  const isActive = isNavItemActive(item.href, pathname);
                   return (
                     <Link
                       key={item.name}
@@ -105,7 +123,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
             <nav className="mt-5 flex-1 px-2 space-y-1">
               {navigation.map((item) => {
-                const isActive = pathname.startsWith(item.href);
+                const isActive = isNavItemActive(item.href, pathname);
                 return (
                   <Link
                     key={item.name}
@@ -144,7 +162,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <div className="flex space-x-2 text-xs">
                   <Link
                     href="/dashboard/profile"
-                    className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                    className={`${
+                      isNavItemActive('/dashboard/profile', pathname)
+                        ? 'text-indigo-600 dark:text-indigo-400 font-medium'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                    }`}
                   >
                     Profile
                   </Link>
